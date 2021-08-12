@@ -1,0 +1,6 @@
+sqlalchemy
+pandas
+logzero
+selenium
+feedparser
+habanero
