@@ -26,9 +26,7 @@ class SpiderRunner:
     def run(self):
         """
         Runs the spiders with their associated configuration provided in `CONFIG_FILE`
-        For every Spider, a process is created and the method crawl() is called.
-
-        :return:
+        For every Spider, a process is created and the method run() is called.
         """
         total_papers_inserted = 0
         if SpiderRunner.SPIDERS:

@@ -4,6 +4,10 @@ from typing import List
 class MAQuery:
 
     def __init__(self, query: List, columns: List):
+        """
+        @param query: A list of the keywords of the query
+        @param columns: the columns of the file from which the keywords are from.
+        """
         self.query = query
         self.columns = columns
 
@@ -24,6 +28,9 @@ class MAQuery:
         self.__columns = value
 
     def query_as_string(self):
+        """
+        returns the query as a string joined by spaces.
+        """
         return " ".join(self.query)
 
     def __str__(self):

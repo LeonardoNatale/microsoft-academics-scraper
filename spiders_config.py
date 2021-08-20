@@ -6,11 +6,9 @@ CONFIG = {
             "timeout": 10,
             "max_queries": 2,
             "headless": [False, True],
-            "depth_limit": 0,
             "pub_year_filter": 2005,
-            "sub_page_citation_limit": 500,
-            "follow_recommendations": False,
             "csv_path": "csv_exports",
+            "nb_keywords": 3,
             "keyword_file": "keywords_en.csv"
         },
     }

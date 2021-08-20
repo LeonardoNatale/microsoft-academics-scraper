@@ -3,6 +3,8 @@
 papers.db
 *DS_Store
 *xlsx
+csv_exports/
+test.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

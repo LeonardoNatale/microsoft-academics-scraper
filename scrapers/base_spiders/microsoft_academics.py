@@ -28,11 +28,27 @@ class MicrosoftAcademicsSpider(BasePaperSpider):
 
     def __init__(self, db_session: DBSession, page_limit: int = None, citation_count_filter: int = 5, timeout: int = 10,
                  max_queries: int = 2, headless: List[bool] = None, pub_year_filter: int = 2005, csv_path: str = None,
-                 keyword_file: str = None, **kwargs):
+                 nb_keywords: int = 3, keyword_file: str = None, **kwargs):
+        """
+
+        @param db_session: Database session
+        @param page_limit: Number of pages to crawl for a given query
+        @param citation_count_filter: Minimum of citation to crawl an article
+        @param timeout: Timeout limit to load resources
+        @param max_queries: Number of queries to execute
+        @param headless: Should the browser be displayed when crawling ? [bool, bool], first is for search page,
+        second is for articles.
+        @param pub_year_filter: Minimum year to scrape an article.
+        @param csv_path: Directory in which to save the csv
+        @param nb_keywords: Number of keywords per search string
+        @param keyword_file: Name of the file to automatically generate the search strings
+        @param kwargs: Additional config, not used for now.
+        """
         super().__init__(db_session, page_limit, citation_count_filter, **kwargs)
         self.max_queries = max_queries
         self.pub_year_filter = pub_year_filter
         self.csv_path = csv_path
+        self.nb_keywords = nb_keywords
         self.keyword_file = keyword_file
         headless = headless or [False, False]
         self.logger.info('Getting the drivers...')
@@ -41,6 +57,10 @@ class MicrosoftAcademicsSpider(BasePaperSpider):
         self.logger.info('Drivers loaded.')
 
     def run(self):
+        """
+        Crawls microsoft academics.
+        @return: The number of rows inserted to the DB.
+        """
         start_url = MicrosoftAcademicsSpider.start_urls[0]
         for search_string in MicrosoftAcademicsQueryGenerator.get_search_strings(
                 keyword_file=self.keyword_file,
@@ -53,6 +73,12 @@ class MicrosoftAcademicsSpider(BasePaperSpider):
         return self.insert_data()
 
     def parse(self, url: str, query: MAQuery) -> List[dict]:
+        """
+        Parses the home page of microsoft academics. Inputs a query in the search bar and crawls the result page.
+        @param url: url of the page to parse
+        @param query: query to enter in the search bar.
+        @return: The list of papers extracted from this query.
+        """
         self.driver.get(url)
         self.page_count = 1
         papers = []
@@ -105,7 +131,7 @@ class MicrosoftAcademicsSpider(BasePaperSpider):
                 css_selector='div.au-target.ma-year-range-dropdown',
                 ignore_exceptions=[False, True]
             )
-            time.sleep(2)
+            time.sleep(1)
             # Getting all the possible values.
             choices = self.driver.find_elements_by_css_selector('div.au-target.year-item')
             year_choices = [
@@ -135,13 +161,12 @@ class MicrosoftAcademicsSpider(BasePaperSpider):
             self.logger.warning('Nothing parsed on page.')
             return papers or []
 
-    def parse_paper_list(self, url: str, query: MAQuery, depth: int = 0) -> Optional[List[dict]]:
+    def parse_paper_list(self, url: str, query: MAQuery) -> Optional[List[dict]]:
         """
         Parses the list of papers on a given page.
 
         :param url: The URL to parse
         :param query: The query to fetch the paper.
-        :param depth:
         :return: A list of papers as dict elements.
         """
         super().parse(url=url, query='')
@@ -154,7 +179,7 @@ class MicrosoftAcademicsSpider(BasePaperSpider):
             )
         ))
         papers = [
-            self.parse_paper(link=link, query=query, citation_count=citation, depth=depth)
+            self.parse_paper(link=link, query=query, citation_count=citation)
             for link, citation in links_citations
         ]
         if papers:
@@ -164,8 +189,16 @@ class MicrosoftAcademicsSpider(BasePaperSpider):
                 return papers
         return []
 
-    def parse_paper(self, link: str, query: MAQuery, citation_count: int, depth: int = 0) -> Union[List[Dict], None]:
-        super().parse_paper(link='', query=query.query, citation_count=citation_count, depth=depth)
+    def parse_paper(self, link: str, query: MAQuery, citation_count: int) -> Union[List[Dict], None]:
+        """
+        Parse the content of the page of a single paper
+
+        @param link: url to the paper page
+        @param query: search string
+        @param citation_count: Citation limit to parse content
+        @return: The content scraped on the page.
+        """
+        super().parse_paper(link='', query=query.query, citation_count=citation_count)
         citation_filter = self.citation_count_filter
         if citation_count < citation_filter:
             return None
@@ -252,6 +285,9 @@ class MicrosoftAcademicsSpider(BasePaperSpider):
             return 0
 
     def save_data_to_csv(self):
+        """
+        Saves the extracted data to csv.
+        """
         directory = os.path.join(self.csv_path, self.QUERY_DATABASE)
         Path(directory).mkdir(parents=True, exist_ok=True)
         file = os.path.join(directory, 'papers.csv')

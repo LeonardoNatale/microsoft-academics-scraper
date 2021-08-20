@@ -28,14 +28,13 @@ class BasePaperSpider(BaseSpider):
     def parse(self, url: str, query: str):
         super().parse(url=url, query=query)
 
-    def parse_paper(self, link: str, query: str, citation_count: int, depth: int = 0):
+    def parse_paper(self, link: str, query: str, citation_count: int):
         """
         Function to parse the content of a project, to be called from `parse()`.
 
         :param link: The link to the paper to parse.
-        :param query:
+        :param query: The search string
         :param citation_count: The citation count of the paper.
-        :param depth:
         :return: The result of the parsing.
         """
         self.logger.info(f' > PARSING PAPER NUMBER ({self.paper_count})')
