@@ -1,0 +1,52 @@
+BEST MANAGEMENT PRACTICE,Ecosystem type ,Climate ,Carbon ,Framework ,outcome ,methodology 
+Afforestation,Water,temperate ,sequestration ,NBS,health ,depth 
+Reforestation,Forest,tropical ,rates ,nature based solution ,ecosystem health ,analysis 
+Rehabilitation,woodland,arid ,tCO2/ha/y,climate change ,soil health ,samples 
+Forest Management,Grassland,humid ,tCO2e/ha/y,AFOLU ,improvement ,sampling 
+Conservation Forest,Herbaceous,hot ,tCO2eq/ha/y,redd,biodiversity ,core sampler
+No Till,hay / hayed,cold ,drawdown ,redd+,water quality ,bulk density 
+partial till ,Pastureland,mild,GHG,ecosystem services ,biodiversity,equivalent soil mass 
+Reduced Till ,Cropland,mediterranean,GHG accounting ,PES ,species richness,remote sensing 
+Mulch-till,Agroforestry,,offset,payment for ES,wildlife,satellite
+Strip Till,Shrubland,,offsetting ,payment for ecosystem services ,pollinator,sensor
+Crop Rotation,Wetland,,carbon credits ,carbon credit ,flora,proximal 
+Cover Cropping,Ice/snow,,carbon markets ,ESG,fauna,spectral 
+Fallowing,Barren,,emissions reduction ,SDG,environmental protection,model 
+Residue Harvest,urban ,,emissions trading ,regenerative management ,protected area,modelling
+Intercropping,developed ,,tSOC/ha/y,regenerative ag ,conservation,machine learning 
+AMP grazing ,Mechanically,,tons of SOC ,regenerative agriculture,habitat,algorithm 
+Adaptive multi-paddock,Nonmechanically ,,MgC/ha/y,agroecology ,water holding ,random forest 
+AMP ,disturbed ,,KgC/ha/y,agroecological ,soil loss,interpolation 
+Rotational Grazing,Mining,,tC/ha/y,sustainable management ,erosion ,extrapolation 
+High Density Grazing,,,,land degradation ,drought ,areal extrapolation 
+Residue Grazing,,,,organic ,flood ,stratifcation 
+Animal Welfare,,,,blue carbon ,runnoff ,strata 
+Conversion,,,,,nonpoint pollution ,
+avoided conversion,,,,,excess nutrients ,
+Conservation ,,,,,nutrient runoff ,
+Nutrient Management,,,,,resilience ,
+ Biochar Soil Amendments,,,,,,
+Compost ,,,,,,
+Microbial Soil Amendments,,,,,,
+Windbreaks/Shelterbelts,,,,,,
+Alley Cropping,,,,,,
+Silvopasture,,,,,,
+Multi-Story Cropping,,,,,,
+Conservation Buffer,,,,,,
+Riparian Forest Buffer,,,,,,
+Contour farming or Swales,,,,,,
+Keylining,,,,,,
+Integrated Pest Management,,,,,,
+Prescribed Fire,,,,,,
+Fire Break,,,,,,
+Bioremediation,,,,,,
+Conservation Buffer,,,,,,
+Riparian Forest Buffer,,,,,,
+Swales,,,,,,
+Contour Farming ,,,,,,
+Keylining,,,,,,
+Pest Management,,,,,,
+Prescribed Fire,,,,,,
+Fire Break,,,,,,
+vegetated Buffer strip ,,,,,,
+Bioremediation,,,,,,

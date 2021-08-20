@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 from typing import List, Union, Dict, Optional
 from datetime import datetime
 import itertools
@@ -15,11 +16,10 @@ from selenium.common.exceptions import (
 from selenium.webdriver.common.keys import Keys
 
 from models.db_session import DBSession
-from research_apis.search_strings.arxiv_search_string import ArXivSearchString
 from scrapers.base_spiders.base_paper_spider import BasePaperSpider
 from scrapers.utils.driver_factory import DriverFactory
-from scrapers.utils.ma_query import MAQuery
-from scrapers.utils.query_generator import QueryGenerator
+from queries.ma_query import MAQuery
+from queries.query_generator import MicrosoftAcademicsQueryGenerator
 
 
 class MicrosoftAcademicsSpider(BasePaperSpider):
@@ -27,16 +27,13 @@ class MicrosoftAcademicsSpider(BasePaperSpider):
     start_urls = ['https://academic.microsoft.com/home']
 
     def __init__(self, db_session: DBSession, page_limit: int = None, citation_count_filter: int = 5, timeout: int = 10,
-                 max_queries: int = 2, headless: List[bool] = None, depth_limit: int = 0, pub_year_filter: int = 2005,
-                 sub_page_citation_limit: int = 500, follow_recommendations: bool = False, csv_path: str = None,
-                 **kwargs):
+                 max_queries: int = 2, headless: List[bool] = None, pub_year_filter: int = 2005, csv_path: str = None,
+                 keyword_file: str = None, **kwargs):
         super().__init__(db_session, page_limit, citation_count_filter, **kwargs)
         self.max_queries = max_queries
-        self.depth_limit = depth_limit
         self.pub_year_filter = pub_year_filter
-        self.sub_page_citation_limit = sub_page_citation_limit
-        self.follow_recommendations = follow_recommendations
         self.csv_path = csv_path
+        self.keyword_file = keyword_file
         headless = headless or [False, False]
         self.logger.info('Getting the drivers...')
         self.driver = DriverFactory.get_driver(headless=headless[0], timeout=timeout)
@@ -45,7 +42,10 @@ class MicrosoftAcademicsSpider(BasePaperSpider):
 
     def run(self):
         start_url = MicrosoftAcademicsSpider.start_urls[0]
-        for search_string in QueryGenerator.get_search_strings(self.max_queries, 3):
+        for search_string in MicrosoftAcademicsQueryGenerator.get_search_strings(
+                keyword_file=self.keyword_file,
+                nb_queries=self.max_queries,
+                nb_keywords=3):
             self.logger.info(f'Scraping data for the following search string: {search_string.query}')
             self.papers += self.parse(url=start_url, query=search_string)
         self.driver.quit()
@@ -61,36 +61,22 @@ class MicrosoftAcademicsSpider(BasePaperSpider):
             self.driver.wait_and_click(
                 func=ec.presence_of_element_located,
                 css_class='suggestion-box',
-                css_selector='div.ma-hp-info',
+                css_selector='.hp-suggestions > h1.title',
                 ignore_exceptions=[False, False]
             )
-            time.sleep(2)
+            # time.sleep(2)
             # Wait for the cookie bar to disappear (logo is visible)
             self.driver.wait_for_css_class(
                 func=ec.element_to_be_clickable,
                 css_class='hp-suggestions',
                 ignore_exceptions=False
             )
-            time.sleep(2)
+            # time.sleep(2)
             # Look for the search input, clear the content, click on it, send the search query.
-            element = self.driver.find_elements_by_css_selector('div.suggestion-box > input#search-input')[1]
+            element = self.driver.find_elements_by_css_selector('div.suggestion-box > input#search-input')[0]
             element.click()
-            element.send_keys(query.query)
-            time.sleep(2)
-            if self.follow_recommendations:
-                # Wait for the suggestions to appear.
-                self.driver.wait_for_css_class(
-                    func=ec.visibility_of_element_located,
-                    css_class='suggestion',
-                    ignore_excptions=True
-                )
-                # Click on the first suggestion, else, if no suggestion, just send the query.
-                try:
-                    self.driver.find_elements_by_css_selector('ul > li.suggestion')[0].click()
-                except (NoSuchElementException, IndexError):
-                    element.send_keys(Keys.ENTER)
-            else:
-                element.send_keys(Keys.ENTER)
+            element.send_keys(query.query_as_string())
+            element.send_keys(Keys.ENTER)
             # Wait for the list of papers to be there.
             self.driver.wait_for_papers_to_load()
             # Filtering by publication type.
@@ -106,13 +92,13 @@ class MicrosoftAcademicsSpider(BasePaperSpider):
                     'ma-data-bar > div.au-target.ma-data-bar'
                 )
             ]
-            time.sleep(2)
+            # time.sleep(2)
             # Filter on Journal publications.
             for box, publication_type in types:
                 if publication_type == 'Journal publications':
                     box.click()
             time.sleep(2)
-            # Selecting the right date range (2010-present) and click ont he date range to display choices.
+            # Selecting the right date range (2005-present) and click on the date range to display choices.
             self.driver.wait_and_click(
                 func=ec.visibility_of_element_located,
                 css_class='primary_paper',
@@ -129,9 +115,9 @@ class MicrosoftAcademicsSpider(BasePaperSpider):
             choices = list(itertools.compress(choices, year_choices))
             if len(choices):
                 choices[0].click()
-                time.sleep(2)
+                time.sleep(1)
                 choices[-1].click()
-                time.sleep(2)
+                time.sleep(1)
             # Wait for the click to be done
             self.driver.wait_for_papers_to_load()
             # 1 is arbitrary value just so it's not None.
@@ -180,12 +166,9 @@ class MicrosoftAcademicsSpider(BasePaperSpider):
 
     def parse_paper(self, link: str, query: MAQuery, citation_count: int, depth: int = 0) -> Union[List[Dict], None]:
         super().parse_paper(link='', query=query.query, citation_count=citation_count, depth=depth)
-        citation_filter = self.citation_count_filter if not query.is_project_oriented else -1
-        if depth > 0:
-            citation_filter = self.sub_page_citation_limit
-        if citation_count < citation_filter or depth > self.depth_limit:
+        citation_filter = self.citation_count_filter
+        if citation_count < citation_filter:
             return None
-        # driver = DriverFactory.get_driver(headless=self.headless[1])
         self.page_driver.get(link)
         try:
             # Wait for the main section to be visible and expand the categories if possible.
@@ -209,7 +192,7 @@ class MicrosoftAcademicsSpider(BasePaperSpider):
             )
             # Get the data
             d = {
-                'title': self.page_driver.get_text(css_string='div.name-section > div.name'),
+                'title': self.page_driver.get_text(css_string='div.name-section > h1.name'),
                 'publication_date': datetime(
                     year=int(self.page_driver.get_text(css_string='div.name-section > a.publication > span.year')),
                     month=1,
@@ -236,10 +219,7 @@ class MicrosoftAcademicsSpider(BasePaperSpider):
                 ),
                 'citation_count': citation_count
             }
-            sub_papers = []
-            if depth < self.depth_limit:
-                sub_papers = self.parse_paper_list(url=link, query=query, depth=depth + 1)
-            return [MicrosoftAcademicsSpider.format_for_db(content=d, query=query)] + sub_papers
+            return [MicrosoftAcademicsSpider.format_for_db(content=d, query=query)]
         except TimeoutException:
             self.logger.warning("Timed out waiting for page to load")
             return None
@@ -272,9 +252,12 @@ class MicrosoftAcademicsSpider(BasePaperSpider):
             return 0
 
     def save_data_to_csv(self):
+        directory = os.path.join(self.csv_path, self.QUERY_DATABASE)
+        Path(directory).mkdir(parents=True, exist_ok=True)
+        file = os.path.join(directory, 'papers.csv')
         pd.DataFrame([MicrosoftAcademicsSpider.format_for_csv(paper) for paper in self.papers])\
             .drop_duplicates(subset=['title'])\
-            .to_csv(os.path.join(self.csv_path, self.QUERY_DATABASE, 'papers.csv'))
+            .to_csv(path_or_buf=file)
 
     @staticmethod
     def format_for_csv(d: dict) -> dict:
@@ -298,12 +281,9 @@ class MicrosoftAcademicsSpider(BasePaperSpider):
         """
         if not content:
             return None
-        search_string = ArXivSearchString()
-        search_string.clear()
-        search_string.name = query
         return {
             **content,
             'search_string': {
-                'name': query.query
+                'name': query.__str__()
             }
         }

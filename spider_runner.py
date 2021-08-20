@@ -3,7 +3,6 @@ import models.base as base
 from models.db_session import DBSession
 
 from scrapers.base_spiders.microsoft_academics import MicrosoftAcademicsSpider
-from research_apis.database_apis.arxiv import ArXivQuery
 
 from spiders_config import CONFIG
 from logzero import logger
@@ -14,7 +13,6 @@ class SpiderRunner:
     SPIDERS = [
       MicrosoftAcademicsSpider
     ]
-
 
     def __init__(self):
         self.spiders_config = CONFIG.get('spiders')
@@ -42,9 +40,8 @@ class SpiderRunner:
                     self.logger.info(f'Inserted {papers_inserted} papers(s) for {spider.__name__}. in {time() - start}')
                     total_papers_inserted += papers_inserted
                 else:
-                    self.close_db()
                     raise KeyError(f'No config found for spider {spider.__name__} in config.')
-
+        self.close_db()
         self.logger.info(f'Inserted {total_papers_inserted} papers in total.')
 
     @staticmethod
